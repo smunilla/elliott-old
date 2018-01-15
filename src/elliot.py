@@ -60,7 +60,7 @@ def flag_bugs(ctx, bug_list):
 @cli.command("flag_bugs", help="Refresh a list of bugs in errata tool")
 @click.pass_context
 def refresh_bugs(ctx, bug_list):
-  payload = "[" + '"{0}"'.format('", "'.join(bug_list)) + "]"
+  payload = repr(bug_list)
   requests.post(ERRATA_BUG_REFRESH_URL, auth=HTTPKerberosAuth(), data=payload)
 
 cli.add_command(sweep)
