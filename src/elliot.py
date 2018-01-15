@@ -3,7 +3,9 @@ from requests_kerberos import HTTPKerberosAuth
 import click
 import requests
 
-ERRATA_ADD_BUG_URL = 'https://errata.devel.redhat.com/api/v1/erratum/%s/add_bug'
+ERRATA_URL = "https://errata.devel.redhat.com"
+ERRATA_ADD_BUG_URL = ERRATA_URL % '/api/v1/erratum/%s/add_bug'
+ERRATA_BUG_REFRESH_URL = ERRATA_URL % '/api/v1/bug/refresh'
 
 @click.group()
 @click.pass_context
@@ -22,7 +24,7 @@ def cli(ctx, advisory, target_release, verbose):
 
 @cli.command("addnewbugs", help="Add new MODIFED bugs to the advisory")
 @click.pass_context
-def addnewbugs(ctx):
+def sweep(ctx):
     advisory = ctx.obj['advisory']
     target_releases = ctx.obj['target_release']
 
@@ -37,18 +39,31 @@ def addnewbugs(ctx):
 
     new_bugs = check_output(['bugzilla', 'query', '--ids', '--from-url="{0}"'.format(query_url)]).splitlines()
 
+    flag_bugs(ctx, new_bugs)
+    refresh_bugs(ctx, new_bugs)
+
     # post back to errata api
     for bug in new_bugs:
-        for release in target_releases:
-          click.echo("Flagging Bug #{0} with aos-{1}".format(bug, release))
-          call(['bugzilla', 'modify', '--flag', 'aos-{0}+'.format(release), bug])
-
         click.echo("Adding Bug #{0}".format(bug))
         payload = {'bug': bug}
-        r = requests.post(ERRATA_ADD_BUG_URL % advisory, auth=HTTPKerberosAuth(), json=payload)
+        requests.post(ERRATA_ADD_BUG_URL % advisory, auth=HTTPKerberosAuth(), json=payload)
 
+@cli.command("flag_bugs", help="Add the release flag to a list of bugs")
+@click.pass_context
+def flag_bugs(ctx, bug_list):
+    target_releases = ctx.obj['target_release']
+    for bug in bug_list:
+      for release in target_releases:
+        click.echo("Flagging Bug #{0} with aos-{1}".format(bug, release))
+        call(['bugzilla', 'modify', '--flag', 'aos-{0}+'.format(release), bug])
 
-cli.add_command(addnewbugs)
+@cli.command("flag_bugs", help="Refresh a list of bugs in errata tool")
+@click.pass_context
+def refresh_bugs(ctx, bug_list):
+  payload = "[" + '"{0}"'.format('", "'.join(bug_list)) + "]"
+  requests.post(ERRATA_BUG_REFRESH_URL, auth=HTTPKerberosAuth(), data=payload)
+
+cli.add_command(sweep)
 
 if __name__ == '__main__':
     # This is expected behaviour for context passing with click library:
