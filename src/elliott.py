@@ -6,7 +6,7 @@ import click
 import requests
 
 ERRATA_URL = "https://errata.devel.redhat.com"
-ERRATA_ADD_BUG_URL = ERRATA_URL + '/api/v1/erratum/%s/add_bug'
+ERRATA_ADD_BUG_URL = ERRATA_URL + '/api/v1/erratum/{}/add_bug'
 ERRATA_BUG_REFRESH_URL = ERRATA_URL + '/api/v1/bug/refresh'
 
 
@@ -52,8 +52,8 @@ def sweep(ctx):
     for bug in new_bugs:
         click.echo("Adding Bug #{0}".format(bug))
         payload = {'bug': bug}
-        requests.post(ERRATA_ADD_BUG_URL %
-                      advisory, auth=HTTPKerberosAuth(), json=payload)
+        requests.post(ERRATA_ADD_BUG_URL.format(advisory),
+                      auth=HTTPKerberosAuth(), json=payload)
 
 
 @cli.command("flag_bugs", help="Add the release flag to a list of bugs")
