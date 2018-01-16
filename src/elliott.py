@@ -34,7 +34,11 @@ def sweep(ctx):
     target_releases = ctx.obj['target_release']
 
     new_bugs = find_bugs(ctx, target_releases)
-    flag_bugs(ctx, new_bugs)
+
+    for release in target_releases:
+        click.echo("Flagging Bug #{0} with aos-{1}".format(bug, release))
+        add_flag(ctx, 'aos-{0}'.format(release), new_bugs)
+
     refresh_bugs(ctx, new_bugs)
     add_bugs(ctx, advisory, new_bugs)
 
@@ -66,17 +70,15 @@ def find_bugs(ctx, target_releases):
 
 
 @cli.command("flag_bugs", help="Add the release flag to a list of bugs")
+@click.option("--flag",
+              help="Flag to add to each bug in the list. Ex: aos-3.9.x")
 @click.pass_context
-def flag_bugs(ctx, bug_list):
-    target_releases = ctx.obj['target_release']
+def add_flag(ctx, flag, bug_list):
     for bug in bug_list:
-        for release in target_releases:
-            click.echo("Flagging Bug #{0} with aos-{1}".format(bug, release))
-            call(['bugzilla', 'modify', '--flag',
-                  'aos-{0}+'.format(release), bug])
+        call(['bugzilla', 'modify', '--flag', '{0}+'.format(flag), bug])
 
 
-@cli.command("flag_bugs", help="Refresh a list of bugs in errata tool")
+@cli.command("refresh_bugs", help="Refresh a list of bugs in errata tool")
 @click.pass_context
 def refresh_bugs(ctx, bug_list):
     payload = repr(bug_list)
