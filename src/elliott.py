@@ -6,8 +6,8 @@ import click
 import requests
 
 ERRATA_URL = "https://errata.devel.redhat.com"
-ERRATA_ADD_BUG_URL = ERRATA_URL % '/api/v1/erratum/%s/add_bug'
-ERRATA_BUG_REFRESH_URL = ERRATA_URL % '/api/v1/bug/refresh'
+ERRATA_ADD_BUG_URL = ERRATA_URL + '/api/v1/erratum/%s/add_bug'
+ERRATA_BUG_REFRESH_URL = ERRATA_URL + '/api/v1/bug/refresh'
 
 
 @click.group()
