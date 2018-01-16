@@ -14,7 +14,7 @@ setup(
     name='elliott',
     version=VERSION,
     description=('Python CLI Tool for interfacing with Errata Tool'),
-    author='Sam Munilla',
+    author='Samuel Munilla',
     author_email='smunilla@redhat.com',
     url='https://github.com/smunilla/elliott',
     license='MIT',
