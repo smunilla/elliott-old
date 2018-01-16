@@ -27,7 +27,7 @@ def cli(ctx, advisory, target_release, verbose):
     ctx.obj['verbose'] = verbose
 
 
-@cli.command("addnewbugs", help="Add new MODIFED bugs to the advisory")
+@cli.command("sweep", help="Add new MODIFED bugs to the advisory")
 @click.pass_context
 def sweep(ctx):
     advisory = ctx.obj['advisory']
