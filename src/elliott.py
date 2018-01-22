@@ -46,7 +46,7 @@ def sweep(ctx):
 def add_bugs(ctx, bug_list):
     advisory = ctx.obj['advisory']
     for bug in bug_list:
-        click.echo("Adding Bug #{0} to Advisory {1}…".format(bug, advisory))
+        click.echo("Adding Bug #{0} to Advisory {1}".format(bug, advisory))
         payload = {'bug': bug}
         requests.post(ERRATA_ADD_BUG_URL.format(advisory),
                       auth=HTTPKerberosAuth(),
@@ -58,7 +58,7 @@ def add_bugs(ctx, bug_list):
 def find_bugs(ctx):
     target_releases = ctx.obj['target_release']
 
-    click.echo("Searching bugzilla for MODIFIED bugs for release {0}…".format(target_releases))
+    click.echo("Searching bugzilla for MODIFIED bugs for release {0}".format(target_releases))
 
     # target_releases_string="target_release=3.4.z&target_release=3.5.z&target_release=3.6.z"
     target_releases_str = ''
@@ -78,7 +78,7 @@ def find_bugs(ctx):
 @click.pass_context
 def add_flag(ctx, flag, bug_list):
     for bug in bug_list:
-        click.echo("Flagging Bug #{0} with {1}…".format(bug, flag))
+        click.echo("Flagging Bug #{0} with {1}".format(bug, flag))
         call(['bugzilla', 'modify', '--flag', '{0}+'.format(flag), bug])
 
 
