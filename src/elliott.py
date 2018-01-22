@@ -3,6 +3,7 @@
 from subprocess import call, check_output
 from requests_kerberos import HTTPKerberosAuth
 import click
+import json
 import requests
 
 # This is a long, multi-parameter URL, there isn't a lot we can do about that
@@ -14,6 +15,8 @@ ERRATA_URL = "https://errata.devel.redhat.com"
 GET_BUILDS_URL = ERRATA_URL + '/api/v1/erratum/{}/builds'
 ADD_BUG_URL = ERRATA_URL + '/api/v1/erratum/{}/add_bug'
 BUG_REFRESH_URL = ERRATA_URL + '/api/v1/bug/refresh'
+
+SEPARATOR = '----------\n'
 
 
 @click.group()
@@ -57,6 +60,27 @@ def add_bugs(ctx, bug_list):
                       json=payload)
 
 
+@cli.command("fetch_builds", help="Find a list of builds for the advisory")
+@click.pass_context
+def fetch_builds(ctx):
+    advisory = ctx.obj['advisory']
+
+    response = requests.get(GET_BUILDS_URL.format(advisory),
+                            auth=HTTPKerberosAuth())
+
+    data = json.loads(response.content)
+
+    for release_stream in data:
+        click.echo("{}".format(release_stream))
+        click.echo(SEPARATOR)
+
+        builds = sorted([build.keys()[0].encode('utf-8')
+                         for build in data[release_stream]['builds']])
+        click.echo('\n'.join(builds))
+
+        click.echo()
+
+
 @cli.command("find_bugs", help="Find a list of bugs for a specified target release")
 @click.option("--target_release",
               multiple=True,
@@ -65,7 +89,8 @@ def add_bugs(ctx, bug_list):
 def find_bugs(ctx):
     target_releases = ctx.obj['target_release']
 
-    click.echo("Searching bugzilla for MODIFIED bugs for release {0}".format(target_releases))
+    click.echo(
+        "Searching bugzilla for MODIFIED bugs for release {0}".format(target_releases))
 
     # Example output: "target_release=3.4.z&target_release=3.5.z&target_release=3.6.z"
     target_releases_str = ''
@@ -99,6 +124,7 @@ def refresh_bugs(ctx, bug_list):
                   auth=HTTPKerberosAuth(), data=payload)
 
 
+cli.add_command(fetch_builds)
 cli.add_command(sweep)
 
 if __name__ == '__main__':
