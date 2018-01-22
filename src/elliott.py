@@ -5,7 +5,7 @@ from requests_kerberos import HTTPKerberosAuth
 import click
 import requests
 
-BUGZILLA_QUERY_URL = 'https://bugzilla.redhat.com/buglist.cgi?bug_status=MODIFIED&classification=Red%20Hat&f1=component&f2=component&f3=component&f4=cf_verified&keywords=UpcomingRelease&keywords_type=nowords&known_name=All%203.x%20MODIFIED%20Bugs&list_id=8111122&o1=notequals&o2=notequals&o3=notequals&o4=notequals&product=OpenShift%20Container%20Platform&query_based_on=All%203.x%20MODIFIED%20Bugs&query_format=advanced&short_desc=%5C%5Bfork%5C%5D&short_desc_type=notregexp&{0}&v1=RFE&v2=Documentation&v3=Security&v4=FailedQA&version=3.0.0&version=3.1.0&version=3.1.1&version=3.2.0&version=3.2.1&version=3.3.0&version=3.3.1&version=3.4.0&version=3.4.1&version=3.5.0&version=3.5.1&version=3.6.0&version=3.6.1&version=3.7.0&version=3.7.1&version=unspecified'
+BUGZILLA_QUERY_URL = 'https://bugzilla.redhat.com/buglist.cgi?bug_status=MODIFIED&classification=Red%20Hat&f1=component&f2=component&f3=component&f4=cf_verified&keywords=UpcomingRelease&keywords_type=nowords&known_name=All%203.x%20MODIFIED%20Bugs&list_id=8111122&o1=notequals&o2=notequals&o3=notequals&o4=notequals&product=OpenShift%20Container%20Platform&query_based_on=All%203.x%20MODIFIED%20Bugs&query_format=advanced&short_desc=%5C%5Bfork%5C%5D&short_desc_type=notregexp&{0}&v1=RFE&v2=Documentation&v3=Security&v4=FailedQA&version=3.0.0&version=3.1.0&version=3.1.1&version=3.2.0&version=3.2.1&version=3.3.0&version=3.3.1&version=3.4.0&version=3.4.1&version=3.5.0&version=3.5.1&version=3.6.0&version=3.6.1&version=3.7.0&version=3.7.1&version=3.8.0&version=3.9.0&version=unspecified'
 
 ERRATA_URL = "https://errata.devel.redhat.com"
 ERRATA_ADD_BUG_URL = ERRATA_URL + '/api/v1/erratum/{}/add_bug'
@@ -66,6 +66,8 @@ def find_bugs(ctx):
         target_releases_str += 'target_release={0}&'.format(release)
 
     query_url = BUGZILLA_QUERY_URL.format(target_releases_str)
+    if(ctx.obj['verbose']):
+        click.echo(query_url)
     new_bugs = check_output(
         ['bugzilla', 'query', '--ids', '--from-url="{0}"'.format(query_url)]).splitlines()
 
