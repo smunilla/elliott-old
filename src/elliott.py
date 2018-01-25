@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+"""
+elliot.py
+
+A cli utility for interacting with Errata Tool
+
+Uses the API described at https://errata.devel.redhat.com/developer-guide/api-http-api.html
+Requires the python-bugzilla cli tool
+"""
 
 from subprocess import call, check_output
 from requests_kerberos import HTTPKerberosAuth
@@ -32,32 +40,32 @@ def cli(ctx, advisory, verbose):
 
 
 @cli.command("sweep", help="Add new MODIFED bugs to the advisory")
-@click.option("--target_release",
+@click.option("--target-release",
               multiple=True,
               help="Target release versions (e.g. 3.9.x)")
+@click.option("--flag",
+              required=False,
+              help="Optional flag to apply to the found bugs")
 @click.pass_context
-def sweep(ctx):
-    target_releases = ctx.obj['target_release']
+def sweep(ctx, target_release, flag):
+    advisory = ctx.obj['advisory']
+    verbose = ctx.obj['verbose']
 
-    new_bugs = ctx.invoke(find_bugs)
+    new_bugs = search_for_bugs(target_release, verbose)
 
-    for release in target_releases:
-        ctx.invoke(add_flag, flag='aos-{0}'.format(release), bug_list=new_bugs)
+    if flag:
+        add_flag_to_bugs(flag, new_bugs)
 
-    ctx.invoke(refresh_bugs, bug_list=new_bugs)
-    ctx.invoke(add_bugs, bug_list=new_bugs)
+    refresh_bugs(new_bugs)
+
+    add_bugs_to_advisory(new_bugs, advisory)
 
 
 @cli.command("add_bugs", help="Add a list of bugs to the specified advisory")
 @click.pass_context
 def add_bugs(ctx, bug_list):
     advisory = ctx.obj['advisory']
-    for bug in bug_list:
-        click.echo("Adding Bug #{0} to Advisory {1}".format(bug, advisory))
-        payload = {'bug': bug}
-        requests.post(ADD_BUG_URL.format(advisory),
-                      auth=HTTPKerberosAuth(),
-                      json=payload)
+    add_bugs_to_advisory(bug_list, advisory)
 
 
 @cli.command("fetch_builds", help="Find a list of builds for the advisory")
@@ -82,52 +90,68 @@ def fetch_builds(ctx):
 
 
 @cli.command("find_bugs", help="Find a list of bugs for a specified target release")
-@click.option("--target_release",
+@click.option("--target-release",
               multiple=True,
               help="Target release versions (e.g. 3.9.x)")
 @click.pass_context
-def find_bugs(ctx):
-    target_releases = ctx.obj['target_release']
+def find_bugs(target_release):
+    click.echo("Searching bugzilla for MODIFIED bugs for release {0}".format(target_release))
 
-    click.echo(
-        "Searching bugzilla for MODIFIED bugs for release {0}".format(target_releases))
-
-    # Example output: "target_release=3.4.z&target_release=3.5.z&target_release=3.6.z"
-    target_releases_str = ''
-    for release in target_releases:
-        target_releases_str += 'target_release={0}&'.format(release)
-
-    query_url = BUGZILLA_QUERY_URL.format(target_releases_str)
-    if(ctx.obj['verbose']):
-        click.echo(query_url)
-    new_bugs = check_output(
-        ['bugzilla', 'query', '--ids', '--from-url="{0}"'.format(query_url)]).splitlines()
-
-    return new_bugs
+    return search_for_bugs(target_release)
 
 
 @cli.command("flag_bugs", help="Add the release flag to a list of bugs")
 @click.option("--flag",
               help="Flag to add to each bug in the list. Ex: aos-3.9.x")
 @click.pass_context
-def add_flag(ctx, flag, bug_list):
+def add_flag(flag, bug_list):
+    add_flag_to_bugs(flag, bug_list)
+
+
+
+def add_bugs_to_advisory(bug_list, advisory):
     for bug in bug_list:
-        click.echo("Flagging Bug #{0} with {1}".format(bug, flag))
+        click.echo("Adding Bug #{0} to Advisory {1}...".format(bug, advisory))
+        payload = {'bug': bug}
+        requests.post(ADD_BUG_URL.format(advisory),
+                      auth=HTTPKerberosAuth(),
+                      json=payload)
+
+
+def add_flag_to_bugs(flag, bug_list):
+    for bug in bug_list:
+        click.echo("Flagging Bug #{0} with {1}...".format(bug, flag))
         call(['bugzilla', 'modify', '--flag', '{0}+'.format(flag), bug])
 
 
-@cli.command("refresh_bugs", help="Refresh a list of bugs in errata tool")
-@click.pass_context
-def refresh_bugs(ctx, bug_list):
+def refresh_bugs(bug_list):
     payload = repr(bug_list)
     requests.post(BUG_REFRESH_URL,
                   auth=HTTPKerberosAuth(), data=payload)
 
 
-cli.add_command(fetch_builds)
+def search_for_bugs(target_release, verbose=False):
+    # Example output: "target_release=3.4.z&target_release=3.5.z&target_release=3.6.z"
+    click.echo("Searching for bugs with target releases {0}...".format(target_release))
+    target_releases_str = ''
+    for release in target_release:
+        target_releases_str += 'target_release={0}&'.format(release)
+
+    query_url = BUGZILLA_QUERY_URL.format(target_releases_str)
+
+    if verbose:
+        click.echo(query_url)
+
+    new_bugs = check_output(
+        ['bugzilla', 'query', '--ids', '--from-url="{0}"'.format(query_url)]).splitlines()
+
+    return new_bugs
+
+
 cli.add_command(sweep)
+cli.add_command(fetch_builds)
 
 if __name__ == '__main__':
     # This is expected behaviour for context passing with click library:
-    # pylint: disable=unexpected-keyword-arg
+    # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
     cli(obj={})
