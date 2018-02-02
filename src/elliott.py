@@ -94,10 +94,10 @@ def fetch_builds(ctx):
               multiple=True,
               help="Target release versions (e.g. 3.9.x)")
 @click.pass_context
-def find_bugs(target_release):
+def find_bugs(ctx, target_release):
     click.echo("Searching bugzilla for MODIFIED bugs for release {0}".format(target_release))
 
-    return search_for_bugs(target_release)
+    click.echo("\n".join(search_for_bugs(target_release, ctx.obj['verbose'])))
 
 
 @cli.command("flag_bugs", help="Add the release flag to a list of bugs")
